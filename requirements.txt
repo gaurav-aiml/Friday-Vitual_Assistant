@@ -1,4 +1,4 @@
+# On Ubuntu, install PortAudio and eSpeak system libraries as documented in README.md.
 SpeechRecognition
 pyaudio
 pyttsx3
-gTTS
