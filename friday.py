@@ -1,9 +1,10 @@
 import pyttsx3
 import speech_recognition as sr
+from greet_friday import greet
 
 from tools import handle_command
 
-engine = pyttsx3.init()
+engine = pyttsx3.init("sapi5")
 engine.setProperty("rate", 125)
 
 
@@ -14,7 +15,7 @@ def speak(audio: str) -> None:
 
 recognizer = sr.Recognizer()
 
-
+greet()
 def listen() -> sr.AudioData | None:
     try:
         with sr.Microphone() as source:

@@ -1,5 +1,6 @@
 import webbrowser
 
+
 def handle_command(query: str) -> None:
     query = query.lower()
 
