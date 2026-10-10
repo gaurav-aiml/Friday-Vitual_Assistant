@@ -1,8 +1,17 @@
 import datetime
+import platform
+
 import pyttsx3
 
-engine = pyttsx3.init("sapi5")
-engine.setProperty("rate", 125)
+
+def create_engine() -> pyttsx3.Engine:
+    driver = "sapi5" if platform.system() == "Windows" else None
+    engine = pyttsx3.init(driver)
+    engine.setProperty("rate", 125)
+    return engine
+
+
+engine = create_engine()
 
 
 def speak(audio: str) -> None:

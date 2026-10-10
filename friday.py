@@ -1,11 +1,20 @@
+import platform
+
 import pyttsx3
 import speech_recognition as sr
 from greet_friday import greet
 
 from tools import handle_command
 
-engine = pyttsx3.init("sapi5")
-engine.setProperty("rate", 125)
+
+def create_engine() -> pyttsx3.Engine:
+    driver = "sapi5" if platform.system() == "Windows" else None
+    engine = pyttsx3.init(driver)
+    engine.setProperty("rate", 125)
+    return engine
+
+
+engine = create_engine()
 
 
 def speak(audio: str) -> None:
