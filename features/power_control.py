@@ -2,42 +2,42 @@
 
 from __future__ import annotations
 
-import os
-import platform
+import subprocess
+
+
+def _run_command(command: list[str]) -> None:
+    subprocess.run(command, check=True, capture_output=True, text=True)
+
+
+def _error_message(action: str, exc: Exception) -> str:
+    detail = getattr(exc, "stderr", None)
+    if detail:
+        detail = detail.strip()
+    if isinstance(exc, FileNotFoundError):
+        detail = "required system command was not found"
+    return f"Couldn't {action}: {detail or exc}"
 
 
 def handle_command(query: str) -> str | None:
     text = query.lower()
-    system = platform.system()
 
-    if "shutdown abort" in text or "cancel shutdown" in text:
-        if system == "Windows":
-            os.system("shutdown /a")
-        return "Shutdown cancelled."
+    try:
+        if "shutdown abort" in text or "cancel shutdown" in text:
+            _run_command(["shutdown", "-c"])
+            return "Shutdown cancelled."
 
-    if "lock" in text and ("pc" in text or "screen" in text):
-        if system == "Windows":
-            os.system("rundll32.exe user32.dll,LockWorkStation")
-        elif system == "Darwin":
-            os.system("pmset displaysleepnow")
-        else:
-            os.system("loginctl lock-session")
-        return "Locking your PC."
+        if "lock" in text and ("pc" in text or "screen" in text):
+            _run_command(["loginctl", "lock-session"])
+            return "Locking your PC."
 
-    if "shutdown" in text or "shut down" in text:
-        if system == "Windows":
-            os.system("shutdown /s /t 5")
-        else:
-            os.system("shutdown -h +1")
-        return "Shutting down in 5 seconds. Say 'shutdown abort' to cancel."
+        if "shutdown" in text or "shut down" in text:
+            _run_command(["shutdown", "-h", "+1"])
+            return "Shutting down in 1 minute. Say 'shutdown abort' to cancel."
 
-    if "sleep" in text and ("pc" in text or "mode" in text):
-        if system == "Windows":
-            os.system("rundll32.exe powrprof.dll,SetSuspendState 0,1,0")
-        elif system == "Darwin":
-            os.system("pmset sleepnow")
-        else:
-            os.system("systemctl suspend")
-        return "Going to sleep."
+        if "sleep" in text and ("pc" in text or "mode" in text):
+            _run_command(["systemctl", "suspend"])
+            return "Going to sleep."
+    except (OSError, subprocess.SubprocessError) as exc:
+        return _error_message("perform that power action", exc)
 
     return None

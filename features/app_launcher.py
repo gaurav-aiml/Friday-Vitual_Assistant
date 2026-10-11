@@ -2,19 +2,22 @@
 
 from __future__ import annotations
 
-import os
-import platform
+import shutil
 import subprocess
 
 APP_MAP = {
-    "chrome": {"Windows": "chrome", "Darwin": "Google Chrome", "Linux": "google-chrome"},
-    "vscode": {"Windows": "code", "Darwin": "Visual Studio Code", "Linux": "code"},
-    "notepad": {"Windows": "notepad", "Darwin": "TextEdit", "Linux": "gedit"},
-    "spotify": {"Windows": "spotify", "Darwin": "Spotify", "Linux": "spotify"},
-    "calculator": {"Windows": "calc", "Darwin": "Calculator", "Linux": "gnome-calculator"},
-    "terminal": {"Windows": "cmd", "Darwin": "Terminal", "Linux": "gnome-terminal"},
-    "explorer": {"Windows": "explorer", "Darwin": "Finder", "Linux": "nautilus"},
+    "chrome": ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser"),
+    "vscode": ("code",),
+    "notepad": ("gnome-text-editor", "gedit", "mousepad"),
+    "spotify": ("spotify",),
+    "calculator": ("gnome-calculator",),
+    "terminal": ("kgx", "gnome-terminal", "x-terminal-emulator"),
+    "explorer": ("nautilus",),
 }
+
+
+def _find_linux_command(candidates: tuple[str, ...]) -> str | None:
+    return next((path for name in candidates if (path := shutil.which(name))), None)
 
 
 def handle_command(query: str) -> str | None:
@@ -22,20 +25,20 @@ def handle_command(query: str) -> str | None:
         return None
 
     text = query.lower()
-    for app_name, platform_map in APP_MAP.items():
-        if app_name in text:
-            os_name = platform.system()
-            target = platform_map.get(os_name)
-            if not target:
-                return f"{app_name} is not mapped for {os_name}."
-            try:
-                if os_name == "Windows":
-                    os.startfile(target)
-                elif os_name == "Darwin":
-                    subprocess.Popen(["open", "-a", target])
-                else:
-                    subprocess.Popen([target])
-                return f"Opening {app_name}."
-            except Exception as exc:
-                return f"Couldn't open {app_name}: {exc}"
+    for app_name, candidates in APP_MAP.items():
+        if app_name not in text:
+            continue
+
+        try:
+            target = _find_linux_command(candidates)
+            if target is None:
+                return (
+                    f"Couldn't open {app_name}: no supported application "
+                    f"was found ({', '.join(candidates)})."
+                )
+            subprocess.Popen([target])
+            return f"Opening {app_name}."
+        except OSError as exc:
+            return f"Couldn't open {app_name}: {exc}"
+
     return None

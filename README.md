@@ -1,8 +1,9 @@
 # Friday - Virtual Assistant
 
-Friday is a voice-controlled personal assistant for Windows and Linux. It can
-respond to spoken commands for todo actions, web browsing, Wikipedia lookups,
-system controls, app launching, screen capture, clipboard access, and more.
+Friday is a voice-controlled personal assistant for Ubuntu 26.04. It can respond
+to spoken commands for todo actions, web browsing, Wikipedia lookups, system
+controls, app launching, screen capture, clipboard access, and more. Friday is
+Linux-only; Windows and macOS are not supported.
 
 ## Features
 
@@ -43,67 +44,77 @@ Friday-Vitual_Assistant/
 │   └── __init__.py
 ├── requirements.txt
 ├── README.md
+├── tests/
+│   └── test_linux_compat.py
 └── todos.json             # created at runtime when you use todo commands
 ```
 
 ## Requirements
 
+- Ubuntu 26.04 desktop (GNOME recommended)
 - Python 3.10+
 - Microphone access
 - Internet connection for Google Speech Recognition
-- Optional system tools for some features:
-  - `espeak-ng` on Linux
-  - system-level commands for lock/shutdown/sleep
+- A logged-in graphical session for microphone, clipboard, display, and power
+  controls
 
-## Windows setup
+## Ubuntu 26.04 setup
 
-Open PowerShell in the project directory and run:
+Open a terminal in the project directory.
 
-```powershell
-py -3 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-```
-
-If script execution is blocked, run:
-
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\.venv\Scripts\Activate.ps1
-```
-
-Then start the assistant:
-
-```powershell
-python friday.py
-```
-
-Allow microphone access in Settings > Privacy & security > Microphone so the
-assistant can listen for commands. Friday uses Windows SAPI5 for speech output.
-
-## Linux setup
-
-Install Python and a speech backend if needed:
+Install the Python build tools and system utilities used by voice input, speech
+output, audio/display controls, screenshots, and clipboard access:
 
 ```bash
-sudo apt-get update
-sudo apt-get install -y python3 python3-venv python3-pip espeak-ng
+sudo apt update
+sudo apt install -y \
+  build-essential \
+  brightnessctl \
+  espeak-ng \
+  libespeak1 \
+  portaudio19-dev \
+  pulseaudio-utils \
+  python3-dev \
+  python3-pip \
+  python3-tk \
+  python3-venv \
+  python3-xlib \
+  scrot \
+  wl-clipboard \
+  xclip
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-Run the assistant:
+Run Friday from a logged-in graphical desktop session:
 
 ```bash
-python friday.py
+python3 friday.py
 ```
 
-On Linux, `pyttsx3` relies on the available speech engine (for example,
-`espeak`). A working internet connection is required for Google speech
-recognition.
+`pyttsx3` uses `espeak-ng` for speech output. `PyAudio` is built against
+PortAudio in the virtual environment. Ubuntu's PipeWire audio service provides
+the PulseAudio-compatible interface used by `pactl`; install and run an audio
+session for volume controls. `brightnessctl` needs a supported backlight
+device and appropriate permissions. The power actions use Ubuntu's
+`loginctl`, `shutdown`, and `systemctl` commands and may be restricted by
+session or administrator policy.
+
+Clipboard commands use `wl-clipboard` in Wayland sessions or `xclip` in X11
+sessions. PyAutoGUI screen capture depends on an X11 display and may be blocked
+or limited in a Wayland session; if capture fails, it may require an X11
+session. Microphone input and Google Speech Recognition require a working
+microphone and internet connection, respectively.
+
+## Run tests
+
+With the project virtual environment active, run:
+
+```bash
+python -m unittest discover -s tests -v
+```
 
 ## Example commands
 
@@ -124,7 +135,7 @@ recognition.
 
 ## Notes
 
-- Some features may require the relevant Python packages to be installed and,
-  for some operating systems, the associated system utilities to be available.
+- Some features require the relevant Ubuntu system utilities, desktop session,
+  or device permissions described above.
 - Destructive actions such as shutdown should be used with care.
 - Use `Ctrl+C` in the terminal to stop the assistant.

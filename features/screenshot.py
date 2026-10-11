@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import os
 from datetime import datetime
+from pathlib import Path
 
-SAVE_DIR = os.path.join(os.path.expanduser("~"), "Pictures", "Friday")
+SAVE_DIR = Path.home() / "Pictures" / "Friday"
 
 
 def handle_command(query: str) -> str | None:
@@ -17,8 +17,14 @@ def handle_command(query: str) -> str | None:
     except ImportError:
         return "Screenshot requires pyautogui and pillow."
 
-    os.makedirs(SAVE_DIR, exist_ok=True)
-    filename = f"screenshot_{datetime.now():%Y%m%d_%H%M%S}.png"
-    path = os.path.join(SAVE_DIR, filename)
-    pyautogui.screenshot(path)
+    try:
+        SAVE_DIR.mkdir(parents=True, exist_ok=True)
+        filename = f"screenshot_{datetime.now():%Y%m%d_%H%M%S}.png"
+        path = SAVE_DIR / filename
+        pyautogui.screenshot(str(path))
+    except (OSError, RuntimeError) as exc:
+        return (
+            f"Couldn't capture the screen: {exc}. On Ubuntu Wayland, run Friday "
+            "in an X11 session if screen capture is unavailable."
+        )
     return f"Screenshot saved to {filename}"

@@ -1,12 +1,10 @@
 import datetime
-import platform
 
 import pyttsx3
 
 
 def create_engine() -> pyttsx3.Engine:
-    driver = "sapi5" if platform.system() == "Windows" else None
-    engine = pyttsx3.init(driver)
+    engine = pyttsx3.init("espeak")
     engine.setProperty("rate", 125)
     return engine
 

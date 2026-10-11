@@ -13,22 +13,28 @@ def handle_command(query: str) -> str | None:
     except ImportError:
         return "Clipboard features require pyperclip."
 
-    if any(word in text for word in ("what", "read", "show")):
-        content = pyperclip.paste()
-        if not content.strip():
-            return "Clipboard is empty."
-        preview = content[:200] + ("..." if len(content) > 200 else "")
-        return f"Clipboard contains: {preview}"
+    try:
+        if any(word in text for word in ("what", "read", "show")):
+            content = pyperclip.paste()
+            if not content.strip():
+                return "Clipboard is empty."
+            preview = content[:200] + ("..." if len(content) > 200 else "")
+            return f"Clipboard contains: {preview}"
 
-    if "clear" in text or "empty" in text:
-        pyperclip.copy("")
-        return "Clipboard cleared."
+        if "clear" in text or "empty" in text:
+            pyperclip.copy("")
+            return "Clipboard cleared."
 
-    if "copy" in text:
-        for separator in ("clipboard ", "clipboard:"):
-            if separator in text:
-                content = query.split(separator, 1)[1].strip()
-                pyperclip.copy(content)
-                return f"Copied: {content[:50]}"
+        if "copy" in text:
+            for separator in ("clipboard ", "clipboard:"):
+                if separator in text:
+                    content = query.split(separator, 1)[1].strip()
+                    pyperclip.copy(content)
+                    return f"Copied: {content[:50]}"
+    except pyperclip.PyperclipException as exc:
+        return (
+            f"Clipboard unavailable: {exc}. On Ubuntu, install wl-clipboard "
+            "(Wayland) or xclip (X11)."
+        )
 
     return None
