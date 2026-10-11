@@ -2,8 +2,8 @@ import platform
 
 import pyttsx3
 import speech_recognition as sr
-from greet_friday import greet
 
+from greet_friday import greet
 from tools import handle_command
 
 
@@ -24,12 +24,11 @@ def speak(audio: str) -> None:
 
 recognizer = sr.Recognizer()
 
-greet()
+
 def listen() -> sr.AudioData | None:
     try:
         with sr.Microphone() as source:
             recognizer.adjust_for_ambient_noise(source, duration=0.5)
-            speak("Listening...")
             audio = recognizer.listen(source, timeout=5, phrase_time_limit=10)
             return audio
     except sr.WaitTimeoutError:
@@ -38,6 +37,8 @@ def listen() -> sr.AudioData | None:
 
 
 def main() -> None:
+    greet()
+    speak("Hello Sir, I am Friday...")
     while True:
         audio = listen()
         if audio is None:
