@@ -2,7 +2,8 @@ import json
 import os
 from datetime import datetime
 
-TODO_FILE = "todos.json"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TODO_FILE = os.path.join(BASE_DIR, "todos.json")
 
 
 def _load():
