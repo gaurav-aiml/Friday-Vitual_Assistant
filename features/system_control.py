@@ -1,14 +1,23 @@
-"""Volume and brightness controls for Windows 11."""
+"""Volume and brightness controls for Linux desktops."""
 
 from __future__ import annotations
 
 import re
+import shutil
 import subprocess
 
 
-def _run_powershell(command: str) -> str:
+def _find_command(*candidates: str) -> str:
+    for candidate in candidates:
+        path = shutil.which(candidate)
+        if path:
+            return path
+    raise FileNotFoundError(f"none of {', '.join(candidates)} is installed")
+
+
+def _run_command(command: list[str]) -> str:
     result = subprocess.run(
-        ["powershell", "-NoProfile", "-Command", command],
+        command,
         check=True,
         capture_output=True,
         text=True,
@@ -16,43 +25,49 @@ def _run_powershell(command: str) -> str:
     return result.stdout.strip()
 
 
-def _get_volume() -> int:
-    output = _run_powershell(
-        "(Get-CimInstance -Namespace root/StandardCimv2 -ClassName CIM_AudioVolume | Select-Object -First 1).CurrentVolume"
-    )
-    if not output:
-        raise RuntimeError("Windows 11 audio API returned an empty volume value.")
-    return int(output)
+def _get_volume() -> tuple[int, str]:
+    command = _find_command("wpctl", "pactl")
+    if command.endswith("/wpctl") or command == "wpctl":
+        output = _run_command([command, "get-volume", "@DEFAULT_AUDIO_SINK@"])
+        match = re.search(r"Volume:\s*([\d.]+)", output)
+        if not match:
+            raise RuntimeError(f"couldn't read volume from wpctl: {output}")
+        return round(float(match.group(1)) * 100), command
+
+    output = _run_command([command, "get-sink-volume", "@DEFAULT_SINK@"])
+    match = re.search(r"(\d{1,3})%", output)
+    if not match:
+        raise RuntimeError(f"couldn't read volume from pactl: {output}")
+    return int(match.group(1)), command
 
 
-def _set_volume(level: int) -> None:
+def _set_volume(level: int, command: str) -> None:
     level = max(0, min(100, level))
-    _run_powershell(
-        f"$volume = Get-CimInstance -Namespace root/StandardCimv2 -ClassName CIM_AudioVolume | Select-Object -First 1; $volume.SetVolume({level})"
-    )
+    if command.endswith("/wpctl") or command == "wpctl":
+        _run_command([command, "set-volume", "@DEFAULT_AUDIO_SINK@", f"{level / 100:.2f}"])
+    else:
+        _run_command([command, "set-sink-volume", "@DEFAULT_SINK@", f"{level}%"])
 
 
 def _get_brightness() -> int:
-    output = _run_powershell(
-        "(Get-CimInstance -Namespace root/WMI -ClassName WmiMonitorBrightness | Select-Object -First 1).CurrentBrightness"
-    )
-    if not output:
-        raise RuntimeError("Windows 11 brightness API returned an empty value.")
-    return int(output)
+    command = _find_command("brightnessctl")
+    output = _run_command([command, "-m"])
+    match = re.search(r"(\d{1,3})%(?:,|$)", output)
+    if not match:
+        raise RuntimeError(f"couldn't read brightness from brightnessctl: {output}")
+    return int(match.group(1))
 
 
 def _set_brightness(level: int) -> None:
-    level = max(0, min(100, level))
-    _run_powershell(
-        f"$brightness = Get-CimInstance -Namespace root/WMI -ClassName WmiMonitorBrightnessMethods | Select-Object -First 1; $brightness.WmiSetBrightness(1, {level})"
-    )
+    command = _find_command("brightnessctl")
+    _run_command([command, "set", f"{max(0, min(100, level))}%"])
 
 
 def _format_error(feature: str, exc: Exception) -> str:
     if isinstance(exc, FileNotFoundError):
         if feature == "volume":
-            return "Windows 11 audio controls require PowerShell and an active audio device."
-        return "Windows 11 brightness controls require WMI support and a compatible display."
+            return "Linux volume controls require wpctl or pactl and an active audio device."
+        return "Linux brightness controls require brightnessctl and a compatible display."
 
     detail = getattr(exc, "stderr", None)
     if detail:
@@ -65,16 +80,17 @@ def handle_command(query: str) -> str | None:
 
     if "volume" in text:
         try:
+            current, command = _get_volume()
             if "up" in text:
-                new_level = min(100, _get_volume() + 10)
-                _set_volume(new_level)
+                new_level = min(100, current + 10)
+                _set_volume(new_level, command)
                 return f"Volume at {new_level}%"
             if "down" in text:
-                new_level = max(0, _get_volume() - 10)
-                _set_volume(new_level)
+                new_level = max(0, current - 10)
+                _set_volume(new_level, command)
                 return f"Volume at {new_level}%"
             if "mute" in text:
-                _set_volume(0)
+                _set_volume(0, command)
                 return "Muted"
 
             level = next(
@@ -82,10 +98,9 @@ def handle_command(query: str) -> str | None:
             )
             if level is not None:
                 level = max(0, min(100, level))
-                _set_volume(level)
+                _set_volume(level, command)
                 return f"Volume set to {level}%"
         except (
-            ImportError,
             OSError,
             RuntimeError,
             subprocess.SubprocessError,
@@ -113,7 +128,6 @@ def handle_command(query: str) -> str | None:
                 current = _get_brightness()
                 return f"Brightness at {current}%"
         except (
-            ImportError,
             OSError,
             RuntimeError,
             subprocess.SubprocessError,

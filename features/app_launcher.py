@@ -2,19 +2,34 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+from pathlib import Path
 
 APP_MAP = {
-    "chrome": ("chrome.exe", "msedge.exe", "brave.exe", "firefox.exe"),
-    "vscode": ("code.exe", "code.cmd", "Code.exe"),
-    "notepad": ("notepad.exe",),
-    "spotify": ("spotify.exe",),
-    "calculator": ("calc.exe",),
-    "terminal": ("wt.exe", "cmd.exe", "powershell.exe"),
-    "explorer": ("explorer.exe",),
+    "chrome": (
+        (
+            "google-chrome",
+            "google-chrome-stable",
+            "chromium",
+            "chromium-browser",
+            "microsoft-edge",
+            "brave-browser",
+            "firefox",
+        ),
+        (),
+    ),
+    "vscode": (("code",), ()),
+    "notepad": (("gnome-text-editor", "gedit", "mousepad", "kate"), ()),
+    "spotify": (("spotify",), ()),
+    "calculator": (("gnome-calculator", "kcalc", "galculator"), ()),
+    "terminal": (
+        ("x-terminal-emulator", "gnome-terminal", "konsole", "xfce4-terminal"),
+        (),
+    ),
+    "explorer": (("xdg-open",), (str(Path.home()),)),
 }
 
 
-def _find_windows_command(candidates: tuple[str, ...]) -> str | None:
+def _find_linux_command(candidates: tuple[str, ...]) -> str | None:
     return next((path for name in candidates if (path := shutil.which(name))), None)
 
 
@@ -23,18 +38,18 @@ def handle_command(query: str) -> str | None:
         return None
 
     text = query.lower()
-    for app_name, candidates in APP_MAP.items():
+    for app_name, (candidates, arguments) in APP_MAP.items():
         if app_name not in text:
             continue
 
         try:
-            target = _find_windows_command(candidates)
+            target = _find_linux_command(candidates)
             if target is None:
                 return (
                     f"Couldn't open {app_name}: no supported app was found "
                     f"({', '.join(candidates)})."
                 )
-            subprocess.Popen([target])
+            subprocess.Popen([target, *arguments])
             return f"Opening {app_name}."
         except OSError as exc:
             return f"Couldn't open {app_name}: {exc}"

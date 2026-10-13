@@ -1,6 +1,6 @@
 # Friday - Virtual Assistant
 
-Friday is a voice-controlled personal assistant for Windows 11. It can respond
+Friday is a voice-controlled personal assistant for Linux desktops. It can respond
 to spoken commands for todo actions, web browsing, Wikipedia lookups, system
 controls, app launching, screen capture, clipboard access, and more.
 
@@ -44,53 +44,62 @@ Friday-Vitual_Assistant/
 ├── requirements.txt
 ├── README.md
 ├── tests/
-│   └── test_windows_compat.py
+│   └── test_linux_compat.py
 └── todos.json             # created at runtime when you use todo commands
 ```
 
 ## Requirements
 
-- Windows 11 desktop
+- Linux desktop with an active graphical user session
 - Python 3.10+
 - Microphone access
 - Internet connection for Google Speech Recognition
 - An active user session for microphone, clipboard, display, and power controls
 
-## Windows 11 setup
+## Linux setup
 
-Open PowerShell in the project directory.
+On Debian or Ubuntu, install the system packages needed for microphone, speech,
+audio, and clipboard support:
 
-Create a virtual environment and install the project dependencies:
+```bash
+sudo apt update
+sudo apt install python3 python3-venv python3-dev portaudio19-dev espeak-ng \
+  libasound2-dev xclip
+```
 
-```powershell
-py -m venv .venv
-.\.venv\Scripts\Activate.ps1
+Create a virtual environment and install the Python dependencies:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
 Run Friday from a logged-in desktop session:
 
-```powershell
+```bash
 python friday.py
 ```
 
-`pyttsx3` uses the installed Windows speech engine. The volume and brightness
-controls rely on PowerShell and the Windows audio/display APIs available on
-Windows 11. The shutdown and sleep actions use native Windows commands such as
-`shutdown` and `rundll32.exe`, and may require administrator privileges or a
-logged-in session.
+`pyttsx3` uses the installed eSpeak speech engine. Volume control uses `wpctl`
+(PipeWire) or `pactl` (PulseAudio/PipeWire PulseAudio); brightness control uses
+`brightnessctl` and may require additional device permissions. The lock, sleep,
+and shutdown actions use `loginctl`, `systemctl`, and `shutdown` and depend on
+the desktop session and system policy.
 
-Clipboard operations use the Windows system clipboard via `pyperclip`. Screen
-capture uses `pyautogui` and works best when the desktop is visible and
-permissions are enabled. Microphone input and Google Speech Recognition require
-a working microphone and internet connection, respectively.
+Clipboard operations use the Linux desktop clipboard via `pyperclip`; install
+`xclip`, `xsel`, or `wl-clipboard` as appropriate for your X11 or Wayland
+session. Screen capture uses `pyautogui` and works best with a visible X11
+desktop; screen capture support can vary under Wayland. Microphone input and
+Google Speech Recognition require a working microphone and internet connection,
+respectively.
 
 ## Run tests
 
-With the virtual environment active in PowerShell, run:
+With the virtual environment active, run:
 
-```powershell
+```bash
 python -m unittest discover -s tests -v
 ```
 
@@ -113,7 +122,7 @@ python -m unittest discover -s tests -v
 
 ## Notes
 
-- Some features require the relevant Windows 11 system utilities, desktop session,
-  or device permissions described above.
+- Some features require the Linux system utilities, desktop session, or device
+  permissions described above.
 - Destructive actions such as shutdown should be used with care.
 - Use `Ctrl+C` in the terminal to stop the assistant.
