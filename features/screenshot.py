@@ -24,7 +24,7 @@ def handle_command(query: str) -> str | None:
         pyautogui.screenshot(str(path))
     except (OSError, RuntimeError) as exc:
         return (
-            f"Couldn't capture the screen: {exc}. On Ubuntu Wayland, run Friday "
-            "in an X11 session if screen capture is unavailable."
+            f"Couldn't capture the screen: {exc}. On Windows 11, make sure the "
+            "desktop is visible and screen capture permissions are enabled."
         )
     return f"Screenshot saved to {filename}"

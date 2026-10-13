@@ -23,19 +23,21 @@ def handle_command(query: str) -> str | None:
 
     try:
         if "shutdown abort" in text or "cancel shutdown" in text:
-            _run_command(["shutdown", "-c"])
+            _run_command(["shutdown", "/a"])
             return "Shutdown cancelled."
 
         if "lock" in text and ("pc" in text or "screen" in text):
-            _run_command(["loginctl", "lock-session"])
+            _run_command(["rundll32.exe", "user32.dll,LockWorkStation"])
             return "Locking your PC."
 
         if "shutdown" in text or "shut down" in text:
-            _run_command(["shutdown", "-h", "+1"])
+            _run_command(["shutdown", "/s", "/t", "60"])
             return "Shutting down in 1 minute. Say 'shutdown abort' to cancel."
 
         if "sleep" in text and ("pc" in text or "mode" in text):
-            _run_command(["systemctl", "suspend"])
+            _run_command(
+                ["rundll32.exe", "powrprof.dll,SetSuspendState", "0", "1", "0"]
+            )
             return "Going to sleep."
     except (OSError, subprocess.SubprocessError) as exc:
         return _error_message("perform that power action", exc)

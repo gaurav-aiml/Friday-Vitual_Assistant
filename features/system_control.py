@@ -1,4 +1,4 @@
-"""Volume and brightness controls."""
+"""Volume and brightness controls for Windows 11."""
 
 from __future__ import annotations
 
@@ -6,63 +6,53 @@ import re
 import subprocess
 
 
-def _get_volume() -> int:
+def _run_powershell(command: str) -> str:
     result = subprocess.run(
-        ["pactl", "get-sink-volume", "@DEFAULT_SINK@"],
+        ["powershell", "-NoProfile", "-Command", command],
         check=True,
         capture_output=True,
         text=True,
     )
-    match = re.search(r"/\s*(\d+)%", result.stdout)
-    if match is None:
-        raise RuntimeError("pactl returned an unrecognized volume value.")
-    return int(match.group(1))
+    return result.stdout.strip()
+
+
+def _get_volume() -> int:
+    output = _run_powershell(
+        "(Get-CimInstance -Namespace root/StandardCimv2 -ClassName CIM_AudioVolume | Select-Object -First 1).CurrentVolume"
+    )
+    if not output:
+        raise RuntimeError("Windows 11 audio API returned an empty volume value.")
+    return int(output)
 
 
 def _set_volume(level: int) -> None:
-    subprocess.run(
-        ["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{level}%"],
-        check=True,
-        capture_output=True,
-        text=True,
+    level = max(0, min(100, level))
+    _run_powershell(
+        f"$volume = Get-CimInstance -Namespace root/StandardCimv2 -ClassName CIM_AudioVolume | Select-Object -First 1; $volume.SetVolume({level})"
     )
 
 
 def _get_brightness() -> int:
-    result = subprocess.run(
-        ["brightnessctl", "get"],
-        check=True,
-        capture_output=True,
-        text=True,
+    output = _run_powershell(
+        "(Get-CimInstance -Namespace root/WMI -ClassName WmiMonitorBrightness | Select-Object -First 1).CurrentBrightness"
     )
-    maximum = subprocess.run(
-        ["brightnessctl", "max"],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    current_value = int(result.stdout.strip())
-    maximum_value = int(maximum.stdout.strip())
-    if maximum_value <= 0:
-        raise RuntimeError("brightnessctl reported an invalid maximum.")
-    return round(current_value * 100 / maximum_value)
+    if not output:
+        raise RuntimeError("Windows 11 brightness API returned an empty value.")
+    return int(output)
 
 
 def _set_brightness(level: int) -> None:
     level = max(0, min(100, level))
-    subprocess.run(
-        ["brightnessctl", "set", f"{level}%"],
-        check=True,
-        capture_output=True,
-        text=True,
+    _run_powershell(
+        f"$brightness = Get-CimInstance -Namespace root/WMI -ClassName WmiMonitorBrightnessMethods | Select-Object -First 1; $brightness.WmiSetBrightness(1, {level})"
     )
 
 
 def _format_error(feature: str, exc: Exception) -> str:
     if isinstance(exc, FileNotFoundError):
         if feature == "volume":
-            return "Volume control requires pactl; install pulseaudio-utils and ensure audio is running."
-        return "Brightness control requires brightnessctl; install it and check display permissions."
+            return "Windows 11 audio controls require PowerShell and an active audio device."
+        return "Windows 11 brightness controls require WMI support and a compatible display."
 
     detail = getattr(exc, "stderr", None)
     if detail:
@@ -94,7 +84,13 @@ def handle_command(query: str) -> str | None:
                 level = max(0, min(100, level))
                 _set_volume(level)
                 return f"Volume set to {level}%"
-        except (ImportError, OSError, RuntimeError, subprocess.SubprocessError, ValueError) as exc:
+        except (
+            ImportError,
+            OSError,
+            RuntimeError,
+            subprocess.SubprocessError,
+            ValueError,
+        ) as exc:
             return _format_error("volume", exc)
 
     if "brightness" in text:
@@ -116,7 +112,13 @@ def handle_command(query: str) -> str | None:
                 _set_brightness(level)
                 current = _get_brightness()
                 return f"Brightness at {current}%"
-        except (ImportError, OSError, RuntimeError, subprocess.SubprocessError, ValueError) as exc:
+        except (
+            ImportError,
+            OSError,
+            RuntimeError,
+            subprocess.SubprocessError,
+            ValueError,
+        ) as exc:
             return _format_error("brightness", exc)
 
     return None

@@ -1,9 +1,8 @@
 # Friday - Virtual Assistant
 
-Friday is a voice-controlled personal assistant for Ubuntu 26.04. It can respond
+Friday is a voice-controlled personal assistant for Windows 11. It can respond
 to spoken commands for todo actions, web browsing, Wikipedia lookups, system
-controls, app launching, screen capture, clipboard access, and more. Friday is
-Linux-only; Windows and macOS are not supported.
+controls, app launching, screen capture, clipboard access, and more.
 
 ## Features
 
@@ -45,74 +44,53 @@ Friday-Vitual_Assistant/
 ├── requirements.txt
 ├── README.md
 ├── tests/
-│   └── test_linux_compat.py
+│   └── test_windows_compat.py
 └── todos.json             # created at runtime when you use todo commands
 ```
 
 ## Requirements
 
-- Ubuntu 26.04 desktop (GNOME recommended)
+- Windows 11 desktop
 - Python 3.10+
 - Microphone access
 - Internet connection for Google Speech Recognition
-- A logged-in graphical session for microphone, clipboard, display, and power
-  controls
+- An active user session for microphone, clipboard, display, and power controls
 
-## Ubuntu 26.04 setup
+## Windows 11 setup
 
-Open a terminal in the project directory.
+Open PowerShell in the project directory.
 
-Install the Python build tools and system utilities used by voice input, speech
-output, audio/display controls, screenshots, and clipboard access:
+Create a virtual environment and install the project dependencies:
 
-```bash
-sudo apt update
-sudo apt install -y \
-  build-essential \
-  brightnessctl \
-  espeak-ng \
-  libespeak1 \
-  portaudio19-dev \
-  pulseaudio-utils \
-  python3-dev \
-  python3-pip \
-  python3-tk \
-  python3-venv \
-  python3-xlib \
-  scrot \
-  wl-clipboard \
-  xclip
-python3 -m venv .venv
-source .venv/bin/activate
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-Run Friday from a logged-in graphical desktop session:
+Run Friday from a logged-in desktop session:
 
-```bash
-python3 friday.py
+```powershell
+python friday.py
 ```
 
-`pyttsx3` uses `espeak-ng` for speech output. `PyAudio` is built against
-PortAudio in the virtual environment. Ubuntu's PipeWire audio service provides
-the PulseAudio-compatible interface used by `pactl`; install and run an audio
-session for volume controls. `brightnessctl` needs a supported backlight
-device and appropriate permissions. The power actions use Ubuntu's
-`loginctl`, `shutdown`, and `systemctl` commands and may be restricted by
-session or administrator policy.
+`pyttsx3` uses the installed Windows speech engine. The volume and brightness
+controls rely on PowerShell and the Windows audio/display APIs available on
+Windows 11. The shutdown and sleep actions use native Windows commands such as
+`shutdown` and `rundll32.exe`, and may require administrator privileges or a
+logged-in session.
 
-Clipboard commands use `wl-clipboard` in Wayland sessions or `xclip` in X11
-sessions. PyAutoGUI screen capture depends on an X11 display and may be blocked
-or limited in a Wayland session; if capture fails, it may require an X11
-session. Microphone input and Google Speech Recognition require a working
-microphone and internet connection, respectively.
+Clipboard operations use the Windows system clipboard via `pyperclip`. Screen
+capture uses `pyautogui` and works best when the desktop is visible and
+permissions are enabled. Microphone input and Google Speech Recognition require
+a working microphone and internet connection, respectively.
 
 ## Run tests
 
-With the project virtual environment active, run:
+With the virtual environment active in PowerShell, run:
 
-```bash
+```powershell
 python -m unittest discover -s tests -v
 ```
 
@@ -135,7 +113,7 @@ python -m unittest discover -s tests -v
 
 ## Notes
 
-- Some features require the relevant Ubuntu system utilities, desktop session,
+- Some features require the relevant Windows 11 system utilities, desktop session,
   or device permissions described above.
 - Destructive actions such as shutdown should be used with care.
 - Use `Ctrl+C` in the terminal to stop the assistant.

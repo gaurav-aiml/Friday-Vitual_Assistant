@@ -1,22 +1,20 @@
-"""Open installed applications."""
-
 from __future__ import annotations
 
 import shutil
 import subprocess
 
 APP_MAP = {
-    "chrome": ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser"),
-    "vscode": ("code",),
-    "notepad": ("gnome-text-editor", "gedit", "mousepad"),
-    "spotify": ("spotify",),
-    "calculator": ("gnome-calculator",),
-    "terminal": ("kgx", "gnome-terminal", "x-terminal-emulator"),
-    "explorer": ("nautilus",),
+    "chrome": ("chrome.exe", "msedge.exe", "brave.exe", "firefox.exe"),
+    "vscode": ("code.exe", "code.cmd", "Code.exe"),
+    "notepad": ("notepad.exe",),
+    "spotify": ("spotify.exe",),
+    "calculator": ("calc.exe",),
+    "terminal": ("wt.exe", "cmd.exe", "powershell.exe"),
+    "explorer": ("explorer.exe",),
 }
 
 
-def _find_linux_command(candidates: tuple[str, ...]) -> str | None:
+def _find_windows_command(candidates: tuple[str, ...]) -> str | None:
     return next((path for name in candidates if (path := shutil.which(name))), None)
 
 
@@ -30,11 +28,11 @@ def handle_command(query: str) -> str | None:
             continue
 
         try:
-            target = _find_linux_command(candidates)
+            target = _find_windows_command(candidates)
             if target is None:
                 return (
-                    f"Couldn't open {app_name}: no supported application "
-                    f"was found ({', '.join(candidates)})."
+                    f"Couldn't open {app_name}: no supported app was found "
+                    f"({', '.join(candidates)})."
                 )
             subprocess.Popen([target])
             return f"Opening {app_name}."
