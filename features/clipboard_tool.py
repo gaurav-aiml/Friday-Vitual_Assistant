@@ -33,8 +33,8 @@ def handle_command(query: str) -> str | None:
                     return f"Copied: {content[:50]}"
     except pyperclip.PyperclipException as exc:
         return (
-            f"Clipboard unavailable: {exc}. Ensure a clipboard utility such as "
-            "xclip, xsel, or wl-clipboard is installed and try again."
+            f"Clipboard unavailable: {exc}. Check that a desktop session with "
+            "clipboard access is available and try again."
         )
 
     return None

@@ -1,6 +1,6 @@
 # Friday - Virtual Assistant
 
-Friday is a voice-controlled personal assistant for Linux desktops. It can respond
+Friday is a voice-controlled personal assistant for Windows and Linux desktops. It can respond
 to spoken commands for todo actions, web browsing, Wikipedia lookups, system
 controls, app launching, screen capture, clipboard access, and more.
 
@@ -50,11 +50,37 @@ Friday-Vitual_Assistant/
 
 ## Requirements
 
-- Linux desktop with an active graphical user session
+- Windows 10/11 or a Linux desktop with an active graphical user session
 - Python 3.10+
 - Microphone access
 - Internet connection for Google Speech Recognition
 - An active user session for microphone, clipboard, display, and power controls
+
+## Windows setup
+
+Install Python 3.10 or newer and make sure the Python launcher is available in
+PowerShell. Create a virtual environment and install the dependencies:
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+If PowerShell blocks activation, run `Set-ExecutionPolicy -Scope Process Bypass`
+in that terminal and activate the environment again. `pyttsx3` uses
+the built-in Windows speech engine. Volume control uses the Windows audio
+endpoint through `pycaw`; brightness control uses Windows WMI and is available
+only on displays that expose brightness controls. Sleep, lock, shutdown, and
+clipboard actions require a logged-in desktop session and may be restricted by
+system policy.
+
+Run Friday from PowerShell:
+
+```powershell
+python friday.py
+```
 
 ## Linux setup
 
@@ -122,7 +148,8 @@ python -m unittest discover -s tests -v
 
 ## Notes
 
-- Some features require the Linux system utilities, desktop session, or device
-  permissions described above.
+- Some features require the platform utilities, desktop session, or device
+  permissions described above. Linux uses `wpctl` or `pactl` for volume,
+  `brightnessctl` for brightness, and `loginctl`/`systemctl` for power actions.
 - Destructive actions such as shutdown should be used with care.
 - Use `Ctrl+C` in the terminal to stop the assistant.

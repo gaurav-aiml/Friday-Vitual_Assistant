@@ -11,7 +11,7 @@ from core.tools import handle_command
 
 
 def create_engine() -> pyttsx3.Engine:
-    engine = pyttsx3.init("espeak")
+    engine = pyttsx3.init()
     engine.setProperty("rate", 125)
     return engine
 

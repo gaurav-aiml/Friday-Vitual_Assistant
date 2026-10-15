@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import platform
 import subprocess
 
 
@@ -18,24 +19,46 @@ def _error_message(action: str, exc: Exception) -> str:
     return f"Couldn't {action}: {detail or exc}"
 
 
+def _power_command(action: str) -> list[str]:
+    if platform.system() == "Windows":
+        commands = {
+            "cancel": ["shutdown", "/a"],
+            "lock": ["rundll32.exe", "user32.dll,LockWorkStation"],
+            "shutdown": ["shutdown", "/s", "/t", "60"],
+            "sleep": [
+                "rundll32.exe",
+                "powrprof.dll,SetSuspendState",
+                "0,1,0",
+            ],
+        }
+    else:
+        commands = {
+            "cancel": ["shutdown", "-c"],
+            "lock": ["loginctl", "lock-session"],
+            "shutdown": ["shutdown", "--poweroff", "+1"],
+            "sleep": ["systemctl", "suspend"],
+        }
+    return commands[action]
+
+
 def handle_command(query: str) -> str | None:
     text = query.lower()
 
     try:
         if "shutdown abort" in text or "cancel shutdown" in text:
-            _run_command(["shutdown", "-c"])
+            _run_command(_power_command("cancel"))
             return "Shutdown cancelled."
 
         if "lock" in text and ("pc" in text or "screen" in text):
-            _run_command(["loginctl", "lock-session"])
+            _run_command(_power_command("lock"))
             return "Locking your screen."
 
         if "shutdown" in text or "shut down" in text:
-            _run_command(["shutdown", "--poweroff", "+1"])
+            _run_command(_power_command("shutdown"))
             return "Shutting down in 1 minute. Say 'shutdown abort' to cancel."
 
         if "sleep" in text and ("pc" in text or "mode" in text):
-            _run_command(["systemctl", "suspend"])
+            _run_command(_power_command("sleep"))
             return "Going to sleep."
     except (OSError, subprocess.SubprocessError) as exc:
         return _error_message("perform that power action", exc)
